@@ -1,17 +1,19 @@
+use crate::cell::Cell;
 use crate::combination::{CELLS_PER_COMBINATION, Combination};
 use crate::guess::{Guess, Hint};
-use crate::pawn::PAWN_COLORS_COUNT;
+use crate::pawn::{PAWN_COLORS_COUNT, Pawn};
 
 const MAX_GUESS_COUNT: usize = 10;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub enum State {
+    #[default]
     WaitForStart,
     Playing,
     Finished,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Game {
     guesses: [Guess; MAX_GUESS_COUNT],
     solution: Combination,
@@ -27,6 +29,64 @@ impl Game {
             state: State::WaitForStart,
             guess_count: 0,
         }
+    }
+
+    pub fn fill_dummy(&mut self) {
+        self.start(Combination::new_from_pawns([
+            Pawn::Red,
+            Pawn::Yellow,
+            Pawn::Black,
+            Pawn::Yellow,
+            Pawn::Blue,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::White,
+            Pawn::White,
+            Pawn::White,
+            Pawn::White,
+            Pawn::White,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::Red,
+            Pawn::White,
+            Pawn::Yellow,
+            Pawn::White,
+            Pawn::White,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::Red,
+            Pawn::White,
+            Pawn::Yellow,
+            Pawn::White,
+            Pawn::White,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::Black,
+            Pawn::Black,
+            Pawn::Black,
+            Pawn::Black,
+            Pawn::Black,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::Blue,
+            Pawn::Red,
+            Pawn::Yellow,
+            Pawn::Black,
+            Pawn::Yellow,
+        ]));
+
+        self.add_guess(Combination::new_from_pawns([
+            Pawn::Red,
+            Pawn::Yellow,
+            Pawn::Black,
+            Pawn::Yellow,
+            Pawn::Blue,
+        ]));
     }
 
     pub fn state(&self) -> &State {
@@ -67,6 +127,18 @@ impl Game {
 
     pub fn has_won(&self) -> bool {
         self.guess_count > 0 && self.guesses[self.guess_count - 1].hint().has_won()
+    }
+
+    pub fn cell(&self, guess_index: usize, cell_index: usize) -> Cell {
+        self.guesses[guess_index].combination().cells()[cell_index].clone()
+    }
+
+    pub fn solution(&self, cell_index: usize) -> Cell {
+        self.solution.cells()[cell_index].clone()
+    }
+
+    pub fn hint(&self, guess_index: usize) -> Hint {
+        self.guesses[guess_index].hint().clone()
     }
 
     fn analyze_guess(guess: &Combination, solution: &Combination) -> Hint {
