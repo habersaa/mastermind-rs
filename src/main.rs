@@ -1,116 +1,89 @@
+mod ui;
+
+use std::cmp::min;
+
 use iced::{
-    Color, Element, Length, Rectangle, Renderer, Theme, mouse,
-    widget::{
-        Canvas, Container, button,
-        canvas::{self, Stroke},
-        column, horizontal_rule, row, text,
-    },
+    Element, Length, Theme,
+    widget::{Container, button, column, horizontal_rule, row},
 };
-use mastermind::{cell::Cell, combination::Combination, game::Game, pawn::Pawn};
+use mastermind::{
+    combination::{CELLS_PER_COMBINATION, Combination},
+    game::{Game, MAX_GUESS_COUNT, State},
+};
 
 #[derive(Debug)]
 struct Mastermind {
     game: Game,
+    guess_editor: Combination,
+    solution_editor: Combination,
 }
 
 impl Default for Mastermind {
     fn default() -> Self {
         let mut game = Game::new();
         game.fill_dummy();
-        Self { game }
+        Self {
+            game: game,
+            guess_editor: Combination::default(),
+            solution_editor: Combination::default(),
+        }
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum EditorType {
+    Solution,
+    Guess,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     Start(Combination),
     Play(Combination),
+    Edit(EditorType, usize),
     Reset,
-}
-
-impl canvas::Program<Message> for Cell {
-    type State = ();
-
-    fn draw(
-        &self,
-        _state: &(),
-        renderer: &Renderer,
-        _theme: &Theme,
-        bounds: Rectangle,
-        _cursor: mouse::Cursor,
-    ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-
-        let radius = bounds.width.min(bounds.height) / 2. - 2.;
-        let circle = canvas::Path::circle(frame.center(), radius);
-
-        if self.is_valid() {
-            let color = match self.pawn() {
-                Some(Pawn::Black) => Color::from_rgb(0., 0., 0.),
-                Some(Pawn::Blue) => Color::from_rgb(0., 0., 1.),
-                Some(Pawn::Brown) => Color::from_rgb(0.5, 0., 0.5),
-                Some(Pawn::Green) => Color::from_rgb(0., 1., 0.),
-                Some(Pawn::Orange) => Color::from_rgb(1., 0.5, 0.),
-                Some(Pawn::Red) => Color::from_rgb(1., 0., 0.),
-                Some(Pawn::White) => Color::from_rgb(1., 1., 1.),
-                Some(Pawn::Yellow) => Color::from_rgb(1., 1., 0.),
-                None => Color::BLACK,
-            };
-            frame.fill(&circle, color);
-        } else {
-            frame.stroke(&circle, Stroke::default());
-        }
-
-        vec![frame.into_geometry()]
-    }
 }
 
 impl Mastermind {
     fn view(&self) -> Element<'_, Message> {
         let mut column = column![];
 
-        for guess_index in 0..10 {
+        for guess_index in 0..min(MAX_GUESS_COUNT, self.game.guess_count()) {
             let mut row = row![];
-            for cell_index in 0..5 {
-                let cell = Container::new(Canvas::new(self.game.cell(guess_index, cell_index)))
-                    .width(40)
-                    .height(40)
-                    .center_x(Length::Fill)
-                    .center_y(Length::Fill)
-                    .padding(5);
-                row = row.push(cell);
+            for cell_index in 0..CELLS_PER_COMBINATION {
+                row = row.push(ui::cell::cell_view(self.game.cell(guess_index, cell_index)));
             }
-            row = row.push(
-                text(format!(
-                    "{} {}",
-                    self.game.hint(guess_index).good_color_and_position,
-                    self.game.hint(guess_index).good_color_wrong_position
-                ))
-                .height(Length::Fill)
-                .center(),
-            );
+            row = row.push(ui::hint_text(self.game.hint(guess_index)));
             column = column.push(row);
         }
 
-        column = column.push(horizontal_rule(1));
+        match self.game.state() {
+            // editor
+            State::WaitForStart => {
+                column = column.push(ui::edit_combination_view(
+                    &self.solution_editor,
+                    EditorType::Solution,
+                ));
+            }
+            State::Playing => {
+                column = column.push(ui::edit_combination_view(
+                    &self.guess_editor,
+                    EditorType::Guess,
+                ));
 
-        // solution
-        let mut row = row![];
-        for cell_index in 0..5 {
-            let cell = Container::new(Canvas::new(self.game.solution(cell_index)))
-                .width(40)
-                .height(40)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
-                .padding(5);
-            row = row.push(cell);
+                // solution
+                // column = column.push(horizontal_rule(1));
+                // column = column.push(ui::edit_combination_view(
+                //     &self.game.solution(),
+                //     EditorType::Solution,
+                // ));
+            }
+            State::Finished => {
+                column = column.push(ui::finished_text(self.game.has_won()));
+            }
         }
-        column = column.push(row);
 
-        let buttons_row = row![
-            button("Reset").on_press(Message::Reset).padding([10, 18]),
-            button("Start")
-        ];
+        let buttons_row = row![button("Reset").on_press(Message::Reset).padding([10, 18]),];
         column = column.push(buttons_row);
         column = column.padding(5);
 
@@ -122,8 +95,22 @@ impl Mastermind {
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::Start(combination) => {}
-            Message::Play(combination) => {}
+            Message::Start(combination) => {
+                self.game.start(combination);
+            }
+            Message::Play(combination) => {
+                self.game.add_guess(combination);
+            }
+            Message::Edit(editor_type, cell_index) => match editor_type {
+                EditorType::Guess => {
+                    let cell = self.guess_editor.cell(cell_index).next_pawn();
+                    self.guess_editor.set_cell(cell_index, cell);
+                }
+                EditorType::Solution => {
+                    let cell = self.solution_editor.cell(cell_index).next_pawn();
+                    self.solution_editor.set_cell(cell_index, cell);
+                }
+            },
             Message::Reset => {
                 self.game = Game::new();
             }

@@ -3,7 +3,7 @@ use crate::combination::{CELLS_PER_COMBINATION, Combination};
 use crate::guess::{Guess, Hint};
 use crate::pawn::{PAWN_COLORS_COUNT, Pawn};
 
-const MAX_GUESS_COUNT: usize = 10;
+pub const MAX_GUESS_COUNT: usize = 10;
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub enum State {
@@ -80,13 +80,13 @@ impl Game {
             Pawn::Yellow,
         ]));
 
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::Red,
-            Pawn::Yellow,
-            Pawn::Black,
-            Pawn::Yellow,
-            Pawn::Blue,
-        ]));
+        // self.add_guess(Combination::new_from_pawns([
+        //     Pawn::Red,
+        //     Pawn::Yellow,
+        //     Pawn::Black,
+        //     Pawn::Yellow,
+        //     Pawn::Blue,
+        // ]));
     }
 
     pub fn state(&self) -> &State {
@@ -133,12 +133,16 @@ impl Game {
         self.guesses[guess_index].combination().cells()[cell_index].clone()
     }
 
-    pub fn solution(&self, cell_index: usize) -> Cell {
-        self.solution.cells()[cell_index].clone()
+    pub fn solution(&self) -> &Combination {
+        &self.solution
     }
 
     pub fn hint(&self, guess_index: usize) -> Hint {
         self.guesses[guess_index].hint().clone()
+    }
+
+    pub fn guess_count(&self) -> usize {
+        self.guess_count
     }
 
     fn analyze_guess(guess: &Combination, solution: &Combination) -> Hint {

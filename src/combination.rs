@@ -22,6 +22,14 @@ impl Combination {
         &self.cells
     }
 
+    pub fn cell(&self, cell_index: usize) -> Cell {
+        self.cells[cell_index].clone()
+    }
+
+    pub fn set_cell(&mut self, cell_index: usize, cell: Cell) {
+        self.cells[cell_index] = cell;
+    }
+
     pub fn is_valid(&self) -> bool {
         self.cells.iter().all(|cell| cell.is_valid())
     }
