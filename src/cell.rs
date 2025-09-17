@@ -21,18 +21,10 @@ impl Cell {
         }
     }
 
-    pub fn next_pawn(self) -> Self {
-        let pawn = match self.pawn {
-            Some(Pawn::Black) => Some(Pawn::Blue),
-            Some(Pawn::Blue) => Some(Pawn::Brown),
-            Some(Pawn::Brown) => Some(Pawn::Green),
-            Some(Pawn::Green) => Some(Pawn::Orange),
-            Some(Pawn::Orange) => Some(Pawn::Red),
-            Some(Pawn::Red) => Some(Pawn::White),
-            Some(Pawn::White) => Some(Pawn::Yellow),
-            Some(Pawn::Yellow) => Some(Pawn::Black),
-            None => Some(Pawn::Black),
-        };
-        Self { pawn }
+    pub fn next_pawn(self, delta: i32) -> Self {
+        match self.pawn {
+            Some(pawn) => Cell::new(pawn.offset(delta)),
+            None => Cell::new(Pawn::Black),
+        }
     }
 }

@@ -1,4 +1,3 @@
-use crate::cell::Cell;
 use crate::combination::{CELLS_PER_COMBINATION, Combination};
 use crate::guess::{Guess, Hint};
 use crate::pawn::{PAWN_COLORS_COUNT, Pawn};
@@ -129,16 +128,12 @@ impl Game {
         self.guess_count > 0 && self.guesses[self.guess_count - 1].hint().has_won()
     }
 
-    pub fn cell(&self, guess_index: usize, cell_index: usize) -> Cell {
-        self.guesses[guess_index].combination().cells()[cell_index].clone()
+    pub fn guess(&self, guess_index: usize) -> &Guess {
+        &self.guesses[guess_index]
     }
 
     pub fn solution(&self) -> &Combination {
         &self.solution
-    }
-
-    pub fn hint(&self, guess_index: usize) -> Hint {
-        self.guesses[guess_index].hint().clone()
     }
 
     pub fn guess_count(&self) -> usize {
@@ -159,8 +154,8 @@ impl Game {
             if guess_color == solution_color {
                 good_color_and_position += 1;
             } else {
-                colors_in_guess[guess_color.index()] += 1;
-                colors_in_solution[solution_color.index()] += 1;
+                colors_in_guess[guess_color.to_index()] += 1;
+                colors_in_solution[solution_color.to_index()] += 1;
             }
         }
 
