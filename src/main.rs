@@ -1,8 +1,9 @@
 mod ui;
 
 use iced::{
-    Element, Length, Theme,
+    Element, Length, Settings, Size, Theme,
     widget::{Container, Text, button, column, horizontal_rule, row},
+    window,
 };
 use mastermind::{
     combination::Combination,
@@ -118,7 +119,18 @@ fn theme(_state: &Mastermind) -> Theme {
 }
 
 pub fn main() -> iced::Result {
+    let settings = Settings {
+        antialiasing: true,
+        ..Default::default()
+    };
+    let window = window::Settings {
+        size: Size::new(600., 1000.),
+        ..Default::default()
+    };
+
     iced::application("Mastermind Iced", Mastermind::update, Mastermind::view)
         .theme(theme)
+        .settings(settings)
+        .window(window)
         .run()
 }
