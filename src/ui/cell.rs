@@ -23,7 +23,7 @@ impl canvas::Program<Message> for Cell {
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
-        let radius = bounds.width.min(bounds.height) / 2. - 2.;
+        let radius = bounds.width.min(bounds.height) / 2. - 4.;
         let circle = canvas::Path::circle(frame.center(), radius);
 
         if self.is_valid() {

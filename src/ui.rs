@@ -14,11 +14,8 @@ use crate::{EditorType, Message};
 const HINT_ROW_WIDTH: Length = Length::Fixed(150.);
 
 pub fn finished_text(has_won: bool) -> Element<'static, Message> {
-    if has_won {
-        Container::new(text("You won !").height(Length::Fill).center()).into()
-    } else {
-        Container::new(text("You lost !").height(Length::Fill).center()).into()
-    }
+    let text_string = if has_won { "You won !" } else { "You lost !" };
+    Container::new(text(text_string).size(24).height(Length::Fill).center()).into()
 }
 
 pub fn hint_text(hint: &Hint) -> Element<'static, Message> {
@@ -68,13 +65,16 @@ pub fn edit_combination_view(
 
     editor_row = editor_row.push(button);
     Container::new(editor_row)
-        .style(|_theme: &Theme| container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.15, 0.15, 0.15))),
-            border: Border::default()
-                .color(Color::from_rgb(0.2, 0.2, 0.2))
-                .rounded(5.)
-                .width(1.),
-            ..Default::default()
+        .style(|theme: &Theme| {
+            let palette = theme.extended_palette();
+            container::Style {
+                background: Some(Background::Color(palette.background.base.color)),
+                border: Border::default()
+                    .color(palette.background.base.text)
+                    .rounded(5.)
+                    .width(1.),
+                ..Default::default()
+            }
         })
         .into()
 }
