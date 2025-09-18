@@ -140,7 +140,7 @@ impl Game {
         self.guess_count
     }
 
-    fn analyze_guess(guess: &Combination, solution: &Combination) -> Hint {
+    pub fn analyze_guess(guess: &Combination, solution: &Combination) -> Hint {
         let mut good_color_and_position = 0;
         let mut good_color_wrong_position = 0;
 

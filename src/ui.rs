@@ -1,7 +1,7 @@
 pub mod cell;
 
 use iced::{
-    Background, Border, Color, Element, Length, Theme,
+    Background, Border, Element, Length, Theme,
     widget::{Container, Text, button, container, row, text},
 };
 use mastermind::{

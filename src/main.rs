@@ -6,6 +6,7 @@ use iced::{
     window,
 };
 use mastermind::{
+    ai::Player,
     combination::Combination,
     game::{Game, MAX_GUESS_COUNT, State},
 };
@@ -15,6 +16,7 @@ struct Mastermind {
     game: Game,
     guess_editor: Combination,
     solution_editor: Combination,
+    player: Player,
 }
 
 impl Default for Mastermind {
@@ -25,6 +27,7 @@ impl Default for Mastermind {
             game: game,
             guess_editor: Combination::default(),
             solution_editor: Combination::default(),
+            player: Player::new(),
         }
     }
 }
@@ -41,6 +44,7 @@ enum Message {
     Play(Combination),
     Edit(EditorType, usize, i32),
     Reset,
+    AskAi,
 }
 
 impl Mastermind {
@@ -58,6 +62,14 @@ impl Mastermind {
             }
         }
 
+        let mut buttons_row = row![];
+        buttons_row = buttons_row.push(
+            button(Text::new("Reset").center())
+                .on_press(Message::Reset)
+                .padding([10, 18])
+                .width(Length::Fill),
+        );
+
         match self.game.state() {
             State::WaitForStart => {
                 // solution editor
@@ -67,18 +79,19 @@ impl Mastermind {
                     EditorType::Solution,
                 ));
             }
-            State::Playing => {}
+            State::Playing => {
+                buttons_row = buttons_row.push(
+                    button(Text::new("AI").center())
+                        .on_press(Message::AskAi)
+                        .padding([10, 18])
+                        .width(Length::Fill),
+                );
+            }
             State::Finished => {
                 column = column.push(ui::finished_text(self.game.has_won()));
             }
         }
 
-        let buttons_row = row![
-            button(Text::new("Reset").center(),)
-                .on_press(Message::Reset)
-                .padding([10, 18])
-                .width(Length::Fill),
-        ];
         column = column.push(buttons_row);
         column = column.padding(5);
 
@@ -96,6 +109,8 @@ impl Mastermind {
             }
             Message::Play(combination) => {
                 self.game.add_guess(combination);
+                self.player
+                    .process_guess(self.game.guess(self.game.guess_count() - 1));
             }
             Message::Edit(editor_type, cell_index, delta) => match editor_type {
                 EditorType::Guess => {
@@ -109,6 +124,13 @@ impl Mastermind {
             },
             Message::Reset => {
                 self.game = Game::new();
+                self.player = Player::new();
+            }
+            Message::AskAi => {
+                let combination = self.player.get_guess();
+                self.game.add_guess(combination);
+                self.player
+                    .process_guess(self.game.guess(self.game.guess_count() - 1));
             }
         }
     }

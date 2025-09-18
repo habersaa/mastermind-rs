@@ -1,6 +1,6 @@
 use crate::combination::{CELLS_PER_COMBINATION, Combination};
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Hint {
     pub good_color_and_position: usize,
     pub good_color_wrong_position: usize,
