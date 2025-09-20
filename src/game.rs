@@ -1,6 +1,6 @@
 use crate::combination::{CELLS_PER_COMBINATION, Combination};
 use crate::guess::{Guess, Hint};
-use crate::pawn::{PAWN_COLORS_COUNT, Pawn};
+use crate::pawn::PAWN_COLORS_COUNT;
 
 pub const MAX_GUESS_COUNT: usize = 10;
 
@@ -28,64 +28,6 @@ impl Game {
             state: State::WaitForStart,
             guess_count: 0,
         }
-    }
-
-    pub fn fill_dummy(&mut self) {
-        self.start(Combination::new_from_pawns([
-            Pawn::Red,
-            Pawn::Yellow,
-            Pawn::Black,
-            Pawn::Yellow,
-            Pawn::Blue,
-        ]));
-
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::White,
-            Pawn::White,
-            Pawn::White,
-            Pawn::White,
-            Pawn::White,
-        ]));
-
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::Red,
-            Pawn::White,
-            Pawn::Yellow,
-            Pawn::White,
-            Pawn::White,
-        ]));
-
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::Red,
-            Pawn::White,
-            Pawn::Yellow,
-            Pawn::White,
-            Pawn::White,
-        ]));
-
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::Black,
-            Pawn::Black,
-            Pawn::Black,
-            Pawn::Black,
-            Pawn::Black,
-        ]));
-
-        self.add_guess(Combination::new_from_pawns([
-            Pawn::Blue,
-            Pawn::Red,
-            Pawn::Yellow,
-            Pawn::Black,
-            Pawn::Yellow,
-        ]));
-
-        // self.add_guess(Combination::new_from_pawns([
-        //     Pawn::Red,
-        //     Pawn::Yellow,
-        //     Pawn::Black,
-        //     Pawn::Yellow,
-        //     Pawn::Blue,
-        // ]));
     }
 
     pub fn state(&self) -> &State {

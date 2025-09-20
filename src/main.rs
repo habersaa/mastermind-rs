@@ -6,9 +6,10 @@ use iced::{
     window,
 };
 use mastermind::{
-    ai::Player,
+    ai::{self, Player},
     combination::Combination,
     game::{Game, MAX_GUESS_COUNT, State},
+    pawn::Pawn,
 };
 
 #[derive(Debug)]
@@ -21,12 +22,16 @@ struct Mastermind {
 
 impl Default for Mastermind {
     fn default() -> Self {
-        let mut game = Game::new();
-        game.fill_dummy();
         Self {
-            game: game,
+            game: Game::new(),
             guess_editor: Combination::default(),
-            solution_editor: Combination::default(),
+            solution_editor: Combination::new_from_pawns([
+                Pawn::Red,
+                Pawn::Orange,
+                Pawn::Yellow,
+                Pawn::Green,
+                Pawn::Blue,
+            ]),
             player: Player::new(),
         }
     }
@@ -44,7 +49,9 @@ enum Message {
     Play(Combination),
     Edit(EditorType, usize, i32),
     Reset,
-    AskAi,
+    AiOnce,
+    AiFinish,
+    AiTestAll,
 }
 
 impl Mastermind {
@@ -69,6 +76,13 @@ impl Mastermind {
                 .padding([10, 18])
                 .width(Length::Fill),
         );
+        let mut ai_row = row![];
+        ai_row = ai_row.push(
+            button(Text::new("Test all").center())
+                .on_press(Message::AiTestAll)
+                .padding([10, 18])
+                .width(Length::Fill),
+        );
 
         match self.game.state() {
             State::WaitForStart => {
@@ -80,9 +94,15 @@ impl Mastermind {
                 ));
             }
             State::Playing => {
-                buttons_row = buttons_row.push(
-                    button(Text::new("AI").center())
-                        .on_press(Message::AskAi)
+                ai_row = ai_row.push(
+                    button(Text::new("Play").center())
+                        .on_press(Message::AiOnce)
+                        .padding([10, 18])
+                        .width(Length::Fill),
+                );
+                ai_row = ai_row.push(
+                    button(Text::new("Finish").center())
+                        .on_press(Message::AiFinish)
                         .padding([10, 18])
                         .width(Length::Fill),
                 );
@@ -93,6 +113,7 @@ impl Mastermind {
         }
 
         column = column.push(buttons_row);
+        column = column.push(ai_row);
         column = column.padding(5);
 
         Container::new(column)
@@ -105,12 +126,16 @@ impl Mastermind {
     fn update(&mut self, message: Message) {
         match message {
             Message::Start(combination) => {
-                self.game.start(combination);
+                if *self.game.state() == State::WaitForStart {
+                    self.game.start(combination);
+                }
             }
             Message::Play(combination) => {
-                self.game.add_guess(combination);
-                self.player
-                    .process_guess(self.game.guess(self.game.guess_count() - 1));
+                if *self.game.state() == State::Playing {
+                    self.game.add_guess(combination);
+                    self.player
+                        .process_guess(self.game.guess(self.game.guess_count() - 1));
+                }
             }
             Message::Edit(editor_type, cell_index, delta) => match editor_type {
                 EditorType::Guess => {
@@ -126,11 +151,39 @@ impl Mastermind {
                 self.game = Game::new();
                 self.player = Player::new();
             }
-            Message::AskAi => {
+            Message::AiOnce => {
                 let combination = self.player.get_guess();
                 self.game.add_guess(combination);
                 self.player
                     .process_guess(self.game.guess(self.game.guess_count() - 1));
+            }
+            Message::AiFinish => {
+                while *self.game.state() != State::Finished {
+                    self.update(Message::AiOnce);
+                }
+            }
+            Message::AiTestAll => {
+                let mut victories = 0;
+                let mut defeats = 0;
+                for i in 0..ai::TOTAL_COMBINATIONS {
+                    self.update(Message::Reset);
+                    self.update(Message::Start(ai::Player::create_solution(i)));
+                    self.update(Message::AiFinish);
+                    if self.game.has_won() {
+                        victories += 1;
+                    } else {
+                        defeats += 1;
+                    }
+                    if i % 1000 == 0 {
+                        println!("- {}", i);
+                    }
+                }
+                println!(
+                    "Finished: W {}, L {}, Total {}",
+                    victories,
+                    defeats,
+                    ai::TOTAL_COMBINATIONS
+                );
             }
         }
     }

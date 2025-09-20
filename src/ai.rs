@@ -4,47 +4,45 @@ use crate::game::Game;
 use crate::guess::Guess;
 use crate::pawn::{PAWN_COLORS_COUNT, Pawn};
 
-const TOTAL_COMBINATIONS: usize = PAWN_COLORS_COUNT.pow(CELLS_PER_COMBINATION as u32);
+pub const TOTAL_COMBINATIONS: usize = PAWN_COLORS_COUNT.pow(CELLS_PER_COMBINATION as u32);
 
 #[derive(Debug)]
 pub struct Player {
-    possible_solutions: [bool; TOTAL_COMBINATIONS],
+    possible_solutions: Vec<usize>,
 }
 
 impl Player {
     pub fn new() -> Player {
+        let solutions = (0..=TOTAL_COMBINATIONS).collect();
         Player {
-            possible_solutions: [true; TOTAL_COMBINATIONS],
+            possible_solutions: solutions,
         }
     }
 
     pub fn process_guess(&mut self, guess: &Guess) {
-        let mut count = 0;
-        for (index, value) in self.possible_solutions.iter_mut().enumerate() {
-            if *value {
-                let solution = Self::create_solution(index);
-                let hint = Game::analyze_guess(guess.combination(), &solution);
+        let mut next_solutions = Vec::new();
+        for index in self.possible_solutions.iter() {
+            let solution = Self::create_solution(*index);
+            let hint = Game::analyze_guess(guess.combination(), &solution);
 
-                if hint != *guess.hint() {
-                    *value = false;
-                } else {
-                    count += 1;
-                }
+            if hint == *guess.hint() {
+                next_solutions.push(*index);
             }
         }
-        println!("Remaining: {}", count);
+        self.possible_solutions = next_solutions;
+        // println!("Remaining: {}", self.possible_solutions.len());
     }
 
     pub fn get_guess(&self) -> Combination {
-        for (index, value) in self.possible_solutions.iter().enumerate() {
-            if *value {
-                return Self::create_solution(index);
-            }
+        let mut solution_index = 0;
+        let random_solution = self.possible_solutions.len() / 2;
+        if random_solution < self.possible_solutions.len() {
+            solution_index = self.possible_solutions[random_solution];
         }
-        Combination::default()
+        Self::create_solution(solution_index)
     }
 
-    fn create_solution(index: usize) -> Combination {
+    pub fn create_solution(index: usize) -> Combination {
         let mut solution = Combination::default();
         let mut index = index;
         for cell_index in 0..CELLS_PER_COMBINATION {
