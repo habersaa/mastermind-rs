@@ -20,7 +20,7 @@ impl Player {
     }
 
     pub fn process_guess(&mut self, guess: &Guess) {
-        let mut next_solutions = Vec::new();
+        let mut next_solutions = Vec::with_capacity(TOTAL_COMBINATIONS);
         for index in self.possible_solutions.iter() {
             let solution = Self::create_solution(*index);
             let hint = Game::analyze_guess(guess.combination(), &solution);

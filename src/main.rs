@@ -174,7 +174,7 @@ impl Mastermind {
                     } else {
                         defeats += 1;
                     }
-                    if i % 1000 == 0 {
+                    if i % 100 == 0 {
                         println!("- {}", i);
                     }
                 }
