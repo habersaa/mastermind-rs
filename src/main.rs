@@ -1,16 +1,22 @@
 mod ui;
 
 use iced::{
-    Element, Length, Settings, Size, Theme,
-    widget::{Container, Text, button, column, horizontal_rule, row},
+    Element, Length, Settings, Size, Task, Theme,
+    widget::{Container, column, horizontal_rule, row, text},
     window,
 };
 use mastermind::{
-    ai::{self, Player},
+    ai::{Player, TOTAL_COMBINATIONS},
     combination::Combination,
     game::{Game, MAX_GUESS_COUNT, State},
-    pawn::Pawn,
 };
+
+#[derive(Debug, Copy, Clone, Default)]
+struct TestAll {
+    current_index: usize,
+    victories: usize,
+    defeats: usize,
+}
 
 #[derive(Debug)]
 struct Mastermind {
@@ -18,21 +24,17 @@ struct Mastermind {
     guess_editor: Combination,
     solution_editor: Combination,
     player: Player,
+    tests: Option<TestAll>,
 }
 
 impl Default for Mastermind {
     fn default() -> Self {
         Self {
             game: Game::new(),
-            guess_editor: Combination::default(),
-            solution_editor: Combination::new_from_pawns([
-                Pawn::Red,
-                Pawn::Orange,
-                Pawn::Yellow,
-                Pawn::Green,
-                Pawn::Blue,
-            ]),
+            guess_editor: Combination::new_rainbow(),
+            solution_editor: Combination::new_rainbow(),
             player: Player::new(),
+            tests: None,
         }
     }
 }
@@ -49,9 +51,11 @@ enum Message {
     Play(Combination),
     Edit(EditorType, usize, i32),
     Reset,
-    AiOnce,
-    AiFinish,
+    AiStep,
+    AiSolve,
     AiTestAll,
+    AiTestContinue,
+    AiStopTestAll,
 }
 
 impl Mastermind {
@@ -60,59 +64,64 @@ impl Mastermind {
 
         for guess_index in 0..MAX_GUESS_COUNT {
             if guess_index == self.game.guess_count() && *self.game.state() == State::Playing {
-                column = column.push(ui::edit_combination_view(
+                column = column.push(ui::view::edit_combination_view(
                     &self.guess_editor,
                     EditorType::Guess,
                 ));
             } else {
-                column = column.push(ui::combination_view(self.game.guess(guess_index)));
+                column = column.push(ui::view::combination_view(self.game.guess(guess_index)));
             }
         }
 
-        let mut buttons_row = row![];
-        buttons_row = buttons_row.push(
-            button(Text::new("Reset").center())
-                .on_press(Message::Reset)
-                .padding([10, 18])
-                .width(Length::Fill),
-        );
-        let mut ai_row = row![];
-        ai_row = ai_row.push(
-            button(Text::new("Test all").center())
-                .on_press(Message::AiTestAll)
-                .padding([10, 18])
-                .width(Length::Fill),
-        );
+        if *self.game.state() != State::WaitForStart && self.tests.is_none() {
+            let mut buttons_row = row![];
+            buttons_row =
+                buttons_row.push(ui::button::new_button("Reset").on_press(Message::Reset));
+            column = column.push(buttons_row);
+        }
+
+        let mut ai_row = row![text("AI:").center()].spacing(5);
+        if self.tests.is_none() {
+            if *self.game.state() == State::WaitForStart {
+                ai_row =
+                    ai_row.push(ui::button::new_button("Test all").on_press(Message::AiTestAll));
+            }
+        } else {
+            ai_row = ai_row.push(ui::button::new_button("Stop").on_press(Message::AiStopTestAll));
+            ai_row = ai_row.push(
+                text(format!(
+                    "{} / {}",
+                    self.tests.unwrap().current_index,
+                    TOTAL_COMBINATIONS
+                ))
+                .width(Length::Fill)
+                .center(),
+            )
+        }
 
         match self.game.state() {
             State::WaitForStart => {
                 // solution editor
                 column = column.push(horizontal_rule(3));
-                column = column.push(ui::edit_combination_view(
+                column = column.push(ui::view::edit_combination_view(
                     &self.solution_editor,
                     EditorType::Solution,
                 ));
             }
             State::Playing => {
+                ai_row = ai_row.push(ui::button::new_button("Step").on_press(Message::AiStep));
+                ai_row = ai_row.push(ui::button::new_button("Solve").on_press(Message::AiSolve));
                 ai_row = ai_row.push(
-                    button(Text::new("Play").center())
-                        .on_press(Message::AiOnce)
-                        .padding([10, 18])
-                        .width(Length::Fill),
-                );
-                ai_row = ai_row.push(
-                    button(Text::new("Finish").center())
-                        .on_press(Message::AiFinish)
-                        .padding([10, 18])
-                        .width(Length::Fill),
+                    text(format!("{}", self.player.remaining_solutions()))
+                        .width(Length::Fill)
+                        .center(),
                 );
             }
             State::Finished => {
-                column = column.push(ui::finished_text(self.game.has_won()));
+                column = column.push(ui::text::finished_text(self.game.has_won()));
             }
         }
 
-        column = column.push(buttons_row);
         column = column.push(ai_row);
         column = column.padding(5);
 
@@ -123,7 +132,7 @@ impl Mastermind {
             .into()
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Start(combination) => {
                 if *self.game.state() == State::WaitForStart {
@@ -151,41 +160,58 @@ impl Mastermind {
                 self.game = Game::new();
                 self.player = Player::new();
             }
-            Message::AiOnce => {
+            Message::AiStep => {
                 let combination = self.player.get_guess();
                 self.game.add_guess(combination);
                 self.player
                     .process_guess(self.game.guess(self.game.guess_count() - 1));
             }
-            Message::AiFinish => {
+            Message::AiSolve => {
                 while *self.game.state() != State::Finished {
-                    self.update(Message::AiOnce);
+                    let _ = self.update(Message::AiStep);
                 }
             }
             Message::AiTestAll => {
-                let mut victories = 0;
-                let mut defeats = 0;
-                for i in 0..ai::TOTAL_COMBINATIONS {
-                    self.update(Message::Reset);
-                    self.update(Message::Start(ai::Player::create_solution(i)));
-                    self.update(Message::AiFinish);
+                if self.tests.is_none() {
+                    self.tests = Some(TestAll::default());
+                    return self.update(Message::AiTestContinue);
+                }
+            }
+            Message::AiTestContinue => {
+                if self.tests.is_some() {
+                    let mut tests = self.tests.unwrap();
+
+                    let _ = self.update(Message::Reset);
+                    let _ =
+                        self.update(Message::Start(Player::create_solution(tests.current_index)));
+                    let _ = self.update(Message::AiSolve);
                     if self.game.has_won() {
-                        victories += 1;
+                        tests.victories += 1;
                     } else {
-                        defeats += 1;
+                        tests.defeats += 1;
                     }
-                    if i % 100 == 0 {
-                        println!("- {}", i);
+                    tests.current_index += 1;
+
+                    self.tests = Some(tests);
+
+                    if tests.current_index < TOTAL_COMBINATIONS {
+                        return Task::perform(async {}, |_| Message::AiTestContinue);
+                    } else {
+                        println!(
+                            "Finished: W {}, L {}, Total {}",
+                            tests.victories, tests.defeats, TOTAL_COMBINATIONS
+                        );
+                        let _ = self.update(Message::AiStopTestAll);
                     }
                 }
-                println!(
-                    "Finished: W {}, L {}, Total {}",
-                    victories,
-                    defeats,
-                    ai::TOTAL_COMBINATIONS
-                );
+            }
+            Message::AiStopTestAll => {
+                if self.tests.is_some() {
+                    self.tests = None;
+                }
             }
         }
+        Task::none()
     }
 }
 

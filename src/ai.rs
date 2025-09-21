@@ -30,7 +30,6 @@ impl Player {
             }
         }
         self.possible_solutions = next_solutions;
-        // println!("Remaining: {}", self.possible_solutions.len());
     }
 
     pub fn get_guess(&self) -> Combination {
@@ -51,5 +50,9 @@ impl Player {
             index /= PAWN_COLORS_COUNT;
         }
         solution
+    }
+
+    pub fn remaining_solutions(&self) -> usize {
+        self.possible_solutions.len()
     }
 }

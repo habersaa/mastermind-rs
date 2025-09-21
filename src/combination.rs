@@ -18,6 +18,16 @@ impl Combination {
         }
     }
 
+    pub fn new_rainbow() -> Combination {
+        Self::new_from_pawns([
+            Pawn::Red,
+            Pawn::Orange,
+            Pawn::Yellow,
+            Pawn::Green,
+            Pawn::Blue,
+        ])
+    }
+
     pub fn cells(&self) -> &[Cell; CELLS_PER_COMBINATION] {
         &self.cells
     }
