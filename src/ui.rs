@@ -11,6 +11,9 @@ use crate::Message;
 
 const HINT_ROW_WIDTH: Length = Length::Fixed(150.);
 
+pub const WINDOW_ICON: &[u8] =
+    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/icon.png"));
+
 pub const TITLE_ICON: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/assets/mastermind.svg"

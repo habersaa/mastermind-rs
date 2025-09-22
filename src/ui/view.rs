@@ -33,8 +33,8 @@ pub fn edit_combination_view(
     }
 
     let (text, message) = match editor_type {
-        EditorType::Guess => ("Add", Message::Play(combination.clone())),
-        EditorType::Solution => ("Start", Message::Start(combination.clone())),
+        EditorType::Guess => ("Add\nGuess", Message::Play(combination.clone())),
+        EditorType::Solution => ("Start\nGame", Message::Start(combination.clone())),
     };
 
     let mut button = super::button::new_button(text)

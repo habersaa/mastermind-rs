@@ -11,7 +11,7 @@ use mastermind::{
     game::{Game, MAX_GUESS_COUNT, State},
 };
 
-use crate::ui::AI_ICON;
+use crate::ui::{AI_ICON, WINDOW_ICON};
 
 #[derive(Debug, Copy, Clone, Default)]
 struct TestAll {
@@ -246,8 +246,10 @@ pub fn main() -> iced::Result {
         antialiasing: true,
         ..Default::default()
     };
+    let window_icon = window::icon::from_file_data(WINDOW_ICON, None).expect("icon");
     let window = window::Settings {
         size: Size::new(600., 1000.),
+        icon: Some(window_icon),
         ..Default::default()
     };
 
