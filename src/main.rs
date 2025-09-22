@@ -11,6 +11,8 @@ use mastermind::{
     game::{Game, MAX_GUESS_COUNT, State},
 };
 
+use crate::ui::AI_ICON;
+
 #[derive(Debug, Copy, Clone, Default)]
 struct TestAll {
     current_index: usize,
@@ -62,6 +64,14 @@ impl Mastermind {
     fn view(&self) -> Element<'_, Message> {
         let mut column = column![].spacing(10);
 
+        let title_icon = ui::icon(
+            ui::TITLE_ICON,
+            Size::new(Length::Fill, Length::Fixed(80.0)),
+            false,
+        );
+        column = column.push(row![Container::new(title_icon).center(Length::Fill)]);
+        column = column.push(ui::text::intro_text(self.game.state()));
+
         for guess_index in 0..MAX_GUESS_COUNT {
             if guess_index == self.game.guess_count() && *self.game.state() == State::Playing {
                 column = column.push(ui::view::edit_combination_view(
@@ -73,14 +83,21 @@ impl Mastermind {
             }
         }
 
+        let mut buttons_row = row![];
         if *self.game.state() != State::WaitForStart && self.tests.is_none() {
-            let mut buttons_row = row![];
             buttons_row =
                 buttons_row.push(ui::button::new_button("Reset").on_press(Message::Reset));
-            column = column.push(buttons_row);
         }
 
-        let mut ai_row = row![text("AI:").center()].spacing(5);
+        let mut ai_row = row![].spacing(5);
+        if *self.game.state() != State::Finished {
+            ai_row = ai_row.push(ui::icon(
+                AI_ICON,
+                Size::new(Length::Fixed(40.), Length::Fixed(40.)),
+                true,
+            ));
+        }
+
         if self.tests.is_none() {
             if *self.game.state() == State::WaitForStart {
                 ai_row =
@@ -90,7 +107,7 @@ impl Mastermind {
             ai_row = ai_row.push(ui::button::new_button("Stop").on_press(Message::AiStopTestAll));
             ai_row = ai_row.push(
                 text(format!(
-                    "{} / {}",
+                    "Test:\n{} / {}",
                     self.tests.unwrap().current_index,
                     TOTAL_COMBINATIONS
                 ))
@@ -112,9 +129,13 @@ impl Mastermind {
                 ai_row = ai_row.push(ui::button::new_button("Step").on_press(Message::AiStep));
                 ai_row = ai_row.push(ui::button::new_button("Solve").on_press(Message::AiSolve));
                 ai_row = ai_row.push(
-                    text(format!("{}", self.player.remaining_solutions()))
-                        .width(Length::Fill)
-                        .center(),
+                    text(format!(
+                        "Remaining:\n{} / {}",
+                        self.player.remaining_solutions(),
+                        TOTAL_COMBINATIONS
+                    ))
+                    .width(Length::Fill)
+                    .center(),
                 );
             }
             State::Finished => {
@@ -122,6 +143,7 @@ impl Mastermind {
             }
         }
 
+        column = column.push(buttons_row);
         column = column.push(ai_row);
         column = column.padding(5);
 
