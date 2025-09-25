@@ -45,3 +45,44 @@ impl Guess {
         &self.hint
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::combination::Combination;
+    use crate::guess::{Guess, Hint};
+    use crate::pawn::Pawn;
+
+    #[test]
+    fn combination() {
+        let guess = Guess::new(Combination::new_rainbow());
+        assert_eq!(*guess.combination().cell(0).pawn(), Some(Pawn::Red));
+        assert_eq!(*guess.combination().cell(1).pawn(), Some(Pawn::Orange));
+        assert_eq!(*guess.combination().cell(2).pawn(), Some(Pawn::Yellow));
+        assert_eq!(*guess.combination().cell(3).pawn(), Some(Pawn::Green));
+        assert_eq!(*guess.combination().cell(4).pawn(), Some(Pawn::Blue));
+    }
+
+    #[test]
+    fn hint_has_won() {
+        let default_hint = Hint::default();
+        assert_eq!(default_hint.good_color_and_position, 0);
+        assert_eq!(default_hint.good_color_wrong_position, 0);
+        assert_eq!(default_hint.has_won(), false);
+
+        assert_eq!(Hint::new(1, 1).has_won(), false);
+        assert_eq!(Hint::new(2, 3).has_won(), false);
+        assert_eq!(Hint::new(0, 5).has_won(), false);
+        assert_eq!(Hint::new(5, 0).has_won(), true);
+    }
+
+    #[test]
+    fn set_hint() {
+        let mut guess = Guess::new(Combination::new_rainbow());
+        assert_eq!(guess.hint().good_color_and_position, 0);
+        assert_eq!(guess.hint().good_color_wrong_position, 0);
+
+        guess.set_hint(Hint::new(2, 3));
+        assert_eq!(guess.hint().good_color_and_position, 2);
+        assert_eq!(guess.hint().good_color_wrong_position, 3);
+    }
+}

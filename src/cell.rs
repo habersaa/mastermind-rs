@@ -28,3 +28,35 @@ impl Cell {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::cell::Cell;
+    use crate::pawn::Pawn;
+
+    #[test]
+    fn is_valid() {
+        assert_eq!(Cell::default().is_valid(), false);
+        assert_eq!(Cell::new(Pawn::Green).is_valid(), true);
+    }
+
+    #[test]
+    fn pawn() {
+        assert_eq!(*Cell::default().pawn(), None);
+        assert_eq!(*Cell::new(Pawn::Green).pawn(), Some(Pawn::Green));
+    }
+
+    #[test]
+    fn next_pawn() {
+        assert_eq!(*Cell::default().next_pawn(1).pawn(), Some(Pawn::Black));
+        assert_eq!(*Cell::default().next_pawn(5).pawn(), Some(Pawn::Black));
+        assert_eq!(
+            *Cell::new(Pawn::Green).next_pawn(1).pawn(),
+            Some(Pawn::Blue)
+        );
+        assert_eq!(
+            *Cell::new(Pawn::Green).next_pawn(-1).pawn(),
+            Some(Pawn::Yellow)
+        );
+    }
+}

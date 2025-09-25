@@ -116,11 +116,12 @@ mod tests {
     use crate::pawn::Pawn;
 
     #[test]
-    fn run_game() {
+    fn run_game_win() {
         let mut game = Game::new();
 
         assert_eq!(*game.state(), State::WaitForStart);
         assert_eq!(game.has_won(), false);
+        assert_eq!(game.guess_count(), 0);
 
         game.start(Combination::new_from_pawns([
             Pawn::Red,
@@ -140,6 +141,7 @@ mod tests {
             Pawn::White,
         ]));
         assert_eq!(*game.state(), State::Playing);
+        assert_eq!(game.guess_count(), 1);
         assert_eq!(game.has_won(), false);
         assert_eq!(game.last_hint().good_color_and_position, 0);
         assert_eq!(game.last_hint().good_color_wrong_position, 0);
@@ -152,6 +154,7 @@ mod tests {
             Pawn::White,
         ]));
         assert_eq!(*game.state(), State::Playing);
+        assert_eq!(game.guess_count(), 2);
         assert_eq!(game.has_won(), false);
         assert_eq!(game.last_hint().good_color_and_position, 1);
         assert_eq!(game.last_hint().good_color_wrong_position, 1);
@@ -164,6 +167,7 @@ mod tests {
             Pawn::Black,
         ]));
         assert_eq!(*game.state(), State::Playing);
+        assert_eq!(game.guess_count(), 3);
         assert_eq!(game.has_won(), false);
         assert_eq!(game.last_hint().good_color_and_position, 1);
         assert_eq!(game.last_hint().good_color_wrong_position, 0);
@@ -176,6 +180,7 @@ mod tests {
             Pawn::Yellow,
         ]));
         assert_eq!(*game.state(), State::Playing);
+        assert_eq!(game.guess_count(), 4);
         assert_eq!(game.has_won(), false);
         assert_eq!(game.last_hint().good_color_and_position, 0);
         assert_eq!(game.last_hint().good_color_wrong_position, 5);
@@ -192,5 +197,38 @@ mod tests {
         assert_eq!(game.has_won(), true);
         assert_eq!(game.last_hint().good_color_and_position, 5);
         assert_eq!(game.last_hint().good_color_wrong_position, 0);
+    }
+
+    #[test]
+    fn run_game_lose() {
+        let mut game = Game::new();
+
+        assert_eq!(*game.state(), State::WaitForStart);
+        assert_eq!(game.has_won(), false);
+
+        game.start(Combination::new_from_pawns([
+            Pawn::Red,
+            Pawn::Yellow,
+            Pawn::Black,
+            Pawn::Yellow,
+            Pawn::Blue,
+        ]));
+
+        assert_eq!(*game.state(), State::Playing);
+
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+        game.add_guess(Combination::new_rainbow());
+
+        assert_eq!(*game.state(), State::Finished);
+        assert_eq!(game.guess_count(), 10);
+        assert_eq!(game.has_won(), false);
     }
 }
